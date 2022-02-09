@@ -1,5 +1,6 @@
 const fs = require('fs');
-const Pool = require('pg').Pool
+const Pool = require('pg').Pool;
+const csvToJson = require('convert-csv-to-json');
 
 const minMarksToPass = 35;
 
@@ -7,7 +8,7 @@ let databaseConfig = require('./config/database.json');
 
 const pool = new Pool(databaseConfig)
 
-const uploadRecords = (request, response) => {
+const uploadRecords = async (request, response) => {
     const file = request.file;
 
     if (!file) {
@@ -32,21 +33,53 @@ const uploadRecords = (request, response) => {
     const filePath = dirName + fileName;
 
     try {
-        fs.writeFile(filePath, file.buffer, (err) => {
-            if (err) {
-                return response.status(500).json({
-                    message: 'Error uploading file'
-                });
-            }
-        });
+        fs.writeFileSync(filePath, file.buffer, 'utf8');
     } catch (e) {
         return response.status(400).json({
             message: 'Unable to save student records. Please try again'
         });
     }
 
+    let records = csvToJson.fieldDelimiter(',').getJsonFromCsv(__dirname + '/' + filePath);
+
+    if (records.length === 0) {
+        return response.status(400).json({
+            message: 'No records found in the file'
+        });
+    }
+
+    const headers = Object.keys(records[0]);
+
+    const requiredHeaders = ['name', 'age', 'mark1', 'mark2', 'mark3'];
+
+    const headerCheck = requiredHeaders.every(header => headers.includes(header));
+
+    if (!headerCheck) {
+        return response.status(400).json({
+            message: 'Required file headers are missing'
+        });
+    }
+
+    const totalRecords = records.length;
+    let failedRecords = 0;
+
+    for (let i in records) {
+        const insertQuery = 'INSERT INTO students (name, age, mark1, mark2, mark3, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)';
+        const date = new Date();
+        const values = [records[i].name, records[i].age, records[i].mark1, records[i].mark2, records[i].mark3, date, date];
+
+        try {
+            await pool.query(insertQuery, values);
+        } catch (e) {
+            failedRecords++;
+        }
+    }
+
     return response.json({
         message: 'File uploaded successfully',
+        totalRecords: totalRecords,
+        successRecords: totalRecords - failedRecords,
+        failedRecords: failedRecords
     });
 };
 
@@ -77,7 +110,7 @@ const getStudentRecord = (request, response) => {
         }
 
         return response.status(200).json(student)
-    })
+    });
 };
 
 const getStudentRecords = (request, response) => {

@@ -8,6 +8,7 @@
 
 ### Modules used for development ###
 
+* convert-csv-to-json to parse csv to json
 * express package to create http server
 * multer to upload file via http request
 * node-postgres package for database connection
