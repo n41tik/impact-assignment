@@ -2,8 +2,10 @@ const fs = require('fs');
 const Pool = require('pg').Pool;
 const csvToJson = require('convert-csv-to-json');
 
+// minimum mark for a student to be considered passing
 const minMarksToPass = 35;
 
+// NOTE:- normally we should not commit the password to the code, but for the purpose of this assignment, we are doing so.
 let databaseConfig = require('./config/database.json');
 
 const pool = new Pool(databaseConfig)
@@ -25,6 +27,7 @@ const uploadRecords = async (request, response) => {
 
     let dirName = 'uploads/';
 
+    // create the uploads or a sub directory if it does not exist
     if (!fs.existsSync(dirName)) {
         fs.mkdirSync(dirName);
     }
@@ -52,6 +55,7 @@ const uploadRecords = async (request, response) => {
 
     const requiredHeaders = ['name', 'age', 'mark1', 'mark2', 'mark3'];
 
+    // validate the headers
     const headerCheck = requiredHeaders.every(header => headers.includes(header));
 
     if (!headerCheck) {
@@ -101,6 +105,7 @@ const getStudentRecord = (request, response) => {
 
         const student = results.rows[0];
 
+        // checking if the student has passed or not
         if (student.mark1 <= minMarksToPass ||
             student.mark2 <= minMarksToPass ||
             student.mark3 <= minMarksToPass) {
@@ -133,6 +138,7 @@ const getStudentRecords = (request, response) => {
             });
         }
     } else {
+        // return all the students with their result
         resultQuery = `SELECT id,
                               name,
                               mark1,
