@@ -1,6 +1,4 @@
-# README #
-
-Impact Assignment
+# Impact Assignment #
 
 ### Server Requirements ###
 
