@@ -68,12 +68,13 @@ const uploadRecords = async (request, response) => {
     let failedRecords = 0;
 
     for (let i in records) {
-        const insertQuery = 'INSERT INTO students (name, age, mark1, mark2, mark3) VALUES ($1, $2, $3, $4, $5, $6, $7)';
+        const insertQuery = 'INSERT INTO students (name, age, mark1, mark2, mark3) VALUES ($1, $2, $3, $4, $5)';
         const values = [records[i].name, records[i].age, records[i].mark1, records[i].mark2, records[i].mark3];
 
         try {
             await pool.query(insertQuery, values);
         } catch (e) {
+            console.log(e.message);
             failedRecords++;
         }
     }
